@@ -1,13 +1,17 @@
 server:
+  port: 8080
   forward-headers-strategy: native
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.session.SessionAutoConfiguration
   application:
     name: back
   config:
-   import: optional:file:.env[.properties]
+    import: optional:file:.env[.properties]
   profiles:
     active: dev
-    include: secret
   output:
     ansi:
       enabled: always
@@ -26,26 +30,27 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+        default_batch_fetch_size: 100
+    open-in-view: false
   security:
     oauth2:
       client:
         registration:
           kakao:
-            client-id: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION_KAKAO_CLIENT_ID}
+            client-id: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION__KAKAO__CLIENT_ID}
             scope: profile_nickname, profile_image
             client-name: Kakao
             authorization-grant-type: authorization_code
             redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
           google:
-            client-id: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION_GOOGLE_CLIENT_ID}
-            client-secret: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION_GOOGLE_CLIENT_SECRET}
-            scope: profile
-            client-name: Google
-            authorization-grant-type: authorization_code
+            client-id: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION__GOOGLE__CLIENT_ID}
+            client-secret: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION__GOOGLE__CLIENT_SECRET}
             redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
+            client-name: Google
+            scope: profile
           naver:
-            client-id: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION_NAVER_CLIENT_ID}
-            client-secret: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION_NAVER_CLIENT_SECRET}
+            client-id: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION__NAVER__CLIENT_ID}
+            client-secret: ${SPRING__SECURITY__OAUTH2__CLIENT__REGISTRATION__NAVER__CLIENT_SECRET}
             scope: profile_nickname, profile_image
             client-name: Naver
             authorization-grant-type: authorization_code
@@ -69,11 +74,35 @@ logging:
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
     com.back: DEBUG
+management:
+  endpoints:
+    web:
+      base-path: /actuator            # 기본값이지만 명시
+      exposure:
+        include: health,info          # 필요시 metrics 등 추가
+  endpoint:
+    health:
+      probes:
+        enabled: true                 # /actuator/health/{liveness,readiness} 활성화
+      show-details: never             # 프로브 용도면 never 권장(민감정보 차단)
 custom:
+  dev:
+    cookieDomain: localhost
+    frontUrl: "http://${custom.dev.cookieDomain}:3000"
+    backUrl: "http://${custom.dev.cookieDomain}:${server.port}"
+  prod:
+    cookieDomain: p-14566-1.sik2.site
+    frontUrl: "https://www.${custom.prod.cookieDomain}"
+    backUrl: "https://api.${custom.prod.cookieDomain}"
+  site:
+    cookieDomain: "${custom.dev.cookieDomain}"
+    frontUrl: "${custom.dev.frontUrl}"
+    backUrl: "${custom.dev.backUrl}"
+    name: p-14566-1
   jwt:
-      secretKey: ${CUSTOM__JWT__SECRET_KEY}
+    secretKey: ${CUSTOM__JWT__SECRET_KEY}
   accessToken:
-    expireSeconds: "#{60 * 10}"
+    expireSeconds: "#{60*20}"
   notProdMembers:
     - username: KAKAO__123132423
       apiKey: kakao__1
